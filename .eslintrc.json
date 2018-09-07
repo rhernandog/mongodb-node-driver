@@ -1,0 +1,99 @@
+{
+	"env": {
+		"browser": true,
+		"commonjs": true,
+		"es6": true,
+		"node": true
+	},
+	"extends": [
+		"eslint:recommended"
+	],
+	"parserOptions": {
+		"ecmaFeatures": {
+			"experimentalObjectRestSpread": true
+		},
+		"sourceType": "module"
+	},
+	"globals": {
+		"describe": true,
+		"it": true,
+		"before": true,
+		"beforeEach": true
+	},
+	"rules": {
+		"no-const-assign": "warn",
+		"linebreak-style": [
+			2,
+			"windows"
+		],
+		"capitalized-comments": [
+			0,
+			"always"
+		],
+		"no-tabs": [
+			0
+		],
+		"sort-imports": [
+			0,
+			"always"
+		],
+		"no-multiple-empty-lines": [
+			0
+		],
+		"multiline-comment-style": [
+			0
+		],
+		"one-var": [
+			0
+		],
+		"no-underscore-dangle": [
+			0
+		],
+		"arrow-parens": [
+			0
+		],
+		"max-len": [
+			0,
+			{
+				"ignoreComments": true,
+				"code": 1200
+			}
+		],
+		"object-curly-newline": [
+			0,
+			{
+				"multiline": true
+			}
+		],
+		"object-curly-spacing": [
+			2,
+			"always"
+		],
+		"no-this-before-super": "warn",
+		"no-undef": "warn",
+		"no-unreachable": "warn",
+		"no-unused-vars": "warn",
+		"constructor-super": "warn",
+		"valid-typeof": "warn",
+		"indent": [
+			"warn",
+			"tab",
+			{
+				"VariableDeclarator": 2,
+				"SwitchCase": 1
+			}
+		],
+		"semi": [
+			"error",
+			"always"
+		],
+		"no-redeclare": [
+			"warn",
+			{
+				"builtinGlobals": true
+			}
+		],
+		"space-infix-ops": "warn",
+		"no-console": 1
+	}
+}

@@ -1,0 +1,171 @@
+<!doctype html>
+
+<html>
+
+	<head>
+
+		<meta charset="utf-8">
+
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+		<meta name="description" content="">
+
+		<meta name="author" content="Rodrigo Hernando">
+
+		<meta name="keywords" content="">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+		<title>Here Sample</title>
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://js.api.here.com/v3/3.0/mapsjs-ui.css" type="text/css" />
+		
+		<style>
+			#map-container {
+				height: 450px;
+			}
+		</style>
+
+	</head>
+
+	<body>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-12 text-center">
+					<div id="map-container"></div>
+				</div>
+			</div>
+		</div>
+
+		<!-- here map -->
+		<script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-core.js"></script>
+		<script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-service.js"></script>
+		<script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-ui.js"></script>
+		<script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-mapevents.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+
+		<script>
+			/*
+				App ID		mSV9eu0URvQ7GHds72rr
+				App Code	zi9b2CzAsi0jUThvrfeR2w
+			*/
+			var platform = new H.service.Platform({
+				'app_id': 'mSV9eu0URvQ7GHds72rr',
+				'app_code': 'zi9b2CzAsi0jUThvrfeR2w',
+				useHTTPS: true
+			});
+
+			// Obtain the default map types from the platform object:
+			var defaultLayers = platform.createDefaultLayers();
+
+			// Instantiate (and display) a map object:
+			var map = new H.Map(
+				document.getElementById('map-container'),
+				defaultLayers.normal.map,
+				{
+					zoom: 16,
+					center: { lat: -33.448140, lng: -70.571829 }
+				}
+			);
+			
+			// Enable the event system on the map instance:
+			var mapEvents = new H.mapevents.MapEvents(map);
+
+			// map markers array
+			// at any time store all the visible markers of the map
+			// by default is an empty array
+			let mapMarkers = [];
+
+
+			/** Method to update the map markers
+			 * When the view of the map changes, after getting the new array
+			 * of users in the visible area of the map, we clear the current
+			 * markers of the map, then generate the new set of markers and 
+			 * finally we add the updated markers array to the map.
+			 * @param {array} users the users array returned by the server
+			 * @private
+			*/
+			const updateMapMarkers = function(users) {
+				// if the current markers has at least one element remove them
+				if ( mapMarkers.length > 0 ) {
+					map.removeObjects(mapMarkers);
+				}
+				
+				// clear the markers array
+				mapMarkers = [];
+				// if the amount of users in the view is more than 0
+				// create the new array of markers
+				if ( users.length > 0 ) {
+					users.forEach( function(user) {
+						// create the map marker
+						const userMarker = new H.map.Marker({
+							lat: user.location.coordinates[1],
+							lng: user.location.coordinates[0]
+						});
+						// add the marker to the array
+						mapMarkers.push( userMarker );
+					});
+
+					// after adding all the new markers to the array
+					// add the new markers
+					map.addObjects( mapMarkers );
+				} // users length
+			};
+			
+			/** Method to get the map coordinates.
+			 * Based on the current view of the map, we get all the coordinates
+			 * from that view and create the query to find all the users within
+			 * the current visible area of the map.
+			 * @param {object} viewBound the map object view bound
+			 * @returns {string} the query string for the next request
+			*/
+			function getBoxCoordinates(viewBound) {
+				/* return [
+					[viewBound.getBottom(), viewBound.getLeft()],
+					[viewBound.getTop(), viewBound.getRight()]
+				]; */
+				return `top=${viewBound.getTop()}&left=${viewBound.getLeft()}&bottom=${viewBound.getBottom()}&right=${viewBound.getRight()}`;
+			};
+
+
+			/** Method to 
+			 * 
+			*/
+
+			// Add event listeners:
+			// when the map view changes due to zoom or drag, get the view
+			// bounds of the map and find the users in it
+			// after finding the users, remove the current markers, if any,
+			// and then add the new markers, if any
+			map.addEventListener("mapviewchangeend", function (evt) {
+				var geoCenter = map.getCenter();
+				// console.log( "-----------\nChange end" );
+				// console.log( geoCenter );
+				// console.log( map.getViewBounds().getLeft() );
+				// console.log( map.getViewBounds().getRight() );
+				// console.log( map.getViewBounds().getTop() );
+				// console.log( map.getViewBounds().getBottom() );
+				// console.log( getBoxCoordinates( map.getViewBounds() ) );
+				// axios.get(`http://localhost:3080/users?lg=${geoCenter.lng}&lt=${geoCenter.lat}&dist=2000`)
+				axios.get(`http://localhost:3080/users?${getBoxCoordinates( map.getViewBounds() )}`)
+					.then( response => {
+						// with the new users, update the map's markers
+						updateMapMarkers( response.data );
+						// console.log( response.data );
+					})
+					.catch( e => console.warn( e ) );
+			});
+
+			// MapEvents enables the event system
+			// Behavior implements default interactions for pan/zoom (also on mobile touch environments)
+			var behavior = new H.mapevents.Behavior( mapEvents );
+			
+			// Create the default UI components
+			var ui = H.ui.UI.createDefault(map, defaultLayers);
+		</script>
+
+	</body>
+
+</html>

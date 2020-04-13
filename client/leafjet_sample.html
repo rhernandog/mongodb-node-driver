@@ -1,0 +1,166 @@
+<!doctype html>
+
+<html>
+
+	<head>
+
+		<meta charset="utf-8">
+
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+		<meta name="description" content="">
+
+		<meta name="author" content="Rodrigo Hernando">
+
+		<meta name="keywords" content="">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+		<title>LeafJet Sample</title>
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
+
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css" integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==" crossorigin="" />
+		<script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js" integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA==" crossorigin=""></script>
+
+		<style>
+			#map-container {
+				height: 400px;
+			}
+		</style>
+
+	</head>
+
+	<body>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-12">
+					<h2 class="text-center">LeafJet Map API Sample</h2>
+					<hr>
+					<div id="map-container"></div>
+				</div>
+			</div>
+		</div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+		<script>
+			var mymap = L.map("map-container");
+
+			/* The move end event is triggered when the zoom changes
+			 * so in order to avoid two calls we check if the zoom was changed
+			 * before calling the code in the move end event handler.
+			 * This boolean is set to true when the zoom change event triggers
+			 * and is reset to false when the request is sent to the server.
+			*/
+			let isZoomChange = false;
+
+			/* The markers array
+			 * Holds markers object of each returned user from the server.
+			 * Used for bulk add/remove operations
+			*/
+			let mapMarkers = [];
+			/* Markers group layer.
+			 * Instead of looping through all the markers in the array, we
+			 * use this group layer to add and remove them as a group.
+			*/
+			let markersLayer;
+
+
+			/** Method to update the markers
+			 * First remove the current markers from the map.
+			 * Empty the map markers array.
+			 * Add the new users to the array, if any.
+			 * If the map markers array has at least one marker, add it to
+			 * the map.
+			 * @param {array} users the array of useres returned by the server
+			 * @private
+			*/
+			const updateMapMarkers = function (users) {
+				// if the current map markers is not emtpy clear the map
+				// otherwise, there are no markers in the map
+				if ( mapMarkers.length > 0 ) {
+					markersLayer.removeFrom(mymap);
+					// empty the markers array
+					mapMarkers = [];
+				}
+				
+				// if the users array has at least one user, create map markers
+				// array using the returned users and add them to the map
+				if ( users.length > 0 ) {
+					// loop through the users
+					users.forEach(function(user){
+						mapMarkers.push(
+							L.marker([user.location.coordinates[1], user.location.coordinates[0]])
+						);
+					});
+					// add the new markers array to the map
+					// for that use a layer group
+					markersLayer = L.layerGroup(mapMarkers);
+					markersLayer.addTo(mymap);
+				} // users length
+
+			}; // update markers
+
+
+			/** Method to make the request
+			 * This method gets the map bounds object and creates the query for the
+			 * server request.
+			 * @param {object} mapBounds the map bounds object
+			 * @returns {string} the query string for the server request
+			*/
+			const createRequestQuery = function (mapBounds) {
+				const ne = mapBounds._northEast;
+				const sw = mapBounds._southWest;
+				return `top=${ne.lat}&left=${ne.lng}&bottom=${sw.lat}&right=${sw.lng}`;
+			};
+
+
+			/** Method to make the server request
+			 * 
+			*/
+			const makeServerRequest = function(mapBounds) {
+				axios.get(`http://localhost:3080/users?${createRequestQuery( mapBounds )}`)
+					.then( response => {
+						// with the new users, update the map's markers
+						updateMapMarkers(response.data);
+					})
+					.catch( e => console.warn( e ) );
+			};
+
+			L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+					attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+					maxZoom: 18,
+					id: 'mapbox.streets',
+					accessToken: 'pk.eyJ1Ijoicmhlcm5hbmRvIiwiYSI6ImNqbTJnNjFsbzJxNzIzcWxpeWNhaXF2bjMifQ.Y0_VaLkKskkWw2bLS8CEYw'
+				}).addTo(mymap);
+			// 
+
+
+			mymap
+			.on("load", function(){
+				console.log( "map loaded!!" );
+				makeServerRequest(mymap.getBounds());
+			})
+			.on("zoomend", function () {
+				isZoomChange = true;
+				makeServerRequest(mymap.getBounds());
+			})
+			.on("moveend", function () {
+				if ( isZoomChange ) return isZoomChange = false;
+				makeServerRequest(mymap.getBounds());
+			})
+			.on("click", function () {
+				/* The get bounds event returns an object with the north-east (top-right) and
+				 * south-west (bottom-left) coordinates of the currently visible map
+				*/
+				console.log( mymap.getBounds() );
+				console.log( "click event!!!" );
+			})
+			.setView([-33.453306, -70.571084], 15);
+
+		</script>
+
+	</body>
+
+</html>

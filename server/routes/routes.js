@@ -17,6 +17,7 @@ module.exports = app => {
 	// edit a single user
 	app.route("/users/:userId")
 		.get(userControllers.getSingleUser)
-		.put(userControllers.editSingleUser);
+		.put(userControllers.editSingleUser)
+		.delete(userControllers.deleteSingleUser);
 	// 
 };

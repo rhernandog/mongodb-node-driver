@@ -1,16 +1,19 @@
 const express = require("express");
+// get the cors - ONLY FOR DEVELOPMENT
+const cors = require("cors");
 // get the routes
 const routes = require("./routes/routes");
-// get the database connection code
-const dbConnection = require("./database/database_connection");
-
-// connect to the database
-dbConnection.connectToDb();
 
 const app = express();
 
 // json parser
 app.use(express.json());
+
+// allow cors only in development
+app.use( cors() );
+
+// serve static files
+app.use( express.static("client") );
 
 // apply routes
 routes(app);
@@ -22,3 +25,5 @@ routes(app);
 app.listen(3080, () => {
 	console.log( "----------------------\nServer Listening on Port 3080\n----------------------" );
 });
+
+module.exports = app;
